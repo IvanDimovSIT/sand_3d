@@ -15,6 +15,7 @@ impl VoxelMaterial {
     }
 }
 
+
 pub const WORLD_SIZE: usize = 10;
 
 pub struct VoxelNeighbours{
