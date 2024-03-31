@@ -5,16 +5,14 @@ pub enum VoxelMaterial {
     Water
 }
 impl VoxelMaterial {
-    pub fn get_color(&self) -> (f32, f32, f32) {
+    pub fn get_id(&self) -> u32 {
         match self {
-            Self::Air => {panic!("Air has no color")},
-            Self::Sand => (0.5, 0.5, 0.0),
-            Self::Water => (0.1, 0.1, 1.0),
-            _ => {panic!("Unrecognised Material")},
+            VoxelMaterial::Air => 0,
+            VoxelMaterial::Sand => 1,
+            VoxelMaterial::Water => 2,
         }
     }
 }
-
 
 pub const WORLD_SIZE: usize = 10;
 
@@ -38,21 +36,9 @@ impl VoxelNeighbours {
 }
 
 pub struct World{
-    //voxels: Vec<Vec<Vec<VoxelMaterial>>>
     voxels: [[[VoxelMaterial; WORLD_SIZE]; WORLD_SIZE]; WORLD_SIZE]
 }
 impl World {
-    // pub fn new() -> Self {
-    //     let voxels: Vec<Vec<Vec<VoxelMaterial>>> =
-    //         vec![
-    //             vec![
-    //                 vec![VoxelMaterial::Air; WORLD_SIZE as usize];
-    //                 WORLD_SIZE as usize
-    //             ];
-    //             WORLD_SIZE as usize
-    //         ];
-    //     Self{voxels}
-    // }
 
     pub fn new() -> Self {
         let voxels = [[[VoxelMaterial::Air; WORLD_SIZE]; WORLD_SIZE]; WORLD_SIZE];
