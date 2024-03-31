@@ -14,7 +14,7 @@ impl VoxelMaterial {
     }
 }
 
-pub const WORLD_SIZE: usize = 10;
+pub const WORLD_SIZE: usize = 30;
 
 pub struct VoxelNeighbours{
     pub top: bool,
@@ -56,20 +56,20 @@ impl World {
 
     pub fn get_neighbours(&self, x: usize, y: usize, z: usize) -> VoxelNeighbours {
         let mut neighbours = VoxelNeighbours{top:false, bottom: false, left: false, right: false, front: false, back: false};
-        if x-1 > 0 && !matches!(self.voxels[z][y][x-1],VoxelMaterial::Air){
+        if x > 1 && !matches!(self.voxels[z][y][x-1],VoxelMaterial::Air){
             neighbours.left = true;
         }
         if x+1 < WORLD_SIZE && !matches!(self.voxels[z][y][x+1],VoxelMaterial::Air){
             neighbours.right = true;
         }
-        if y-1 > 0 && !matches!(self.voxels[z][y-1][x],VoxelMaterial::Air){
+        if y > 1 && !matches!(self.voxels[z][y-1][x],VoxelMaterial::Air){
             neighbours.bottom = true;
         }
         if y+1 < WORLD_SIZE && !matches!(self.voxels[z][y+1][x],VoxelMaterial::Air){
             neighbours.top = true;
         }
 
-        if z-1 > 0 && !matches!(self.voxels[z-1][y][x],VoxelMaterial::Air){
+        if z > 1 && !matches!(self.voxels[z-1][y][x],VoxelMaterial::Air){
             neighbours.back = true;
         }
         if z+1 < WORLD_SIZE && !matches!(self.voxels[z+1][y][x],VoxelMaterial::Air){

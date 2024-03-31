@@ -4,7 +4,7 @@ use kiss3d::{nalgebra::{OPoint, Point, Point2, Point3, Quaternion, Translation, 
 
 use crate::{model::{VoxelMaterial, VoxelNeighbours, World, WORLD_SIZE}, texture_generator::{self, TextureGenerator}, wire_cube::{self, WireCube}};
 
-pub const VOXEL_SIZE: f32 = 10.0;
+pub const VOXEL_SIZE: f32 = 3.0;
 const BRIGHTNESS: f32 = 1.5;
 
 pub struct SceneGenerator{
@@ -40,7 +40,15 @@ impl SceneGenerator {
         let top_translation = Translation::from(Vector3::new(0.0f32, VOXEL_SIZE/2.0, 0.0f32));
         let bottom_translation = Translation::from(Vector3::new(0.0f32, -VOXEL_SIZE/2.0, 0.0f32));
 
-        let frame_border = WireCube::new(x, y, z, WORLD_SIZE as f32 * VOXEL_SIZE, 0.0, 0.0, 0.0);
+        let frame_border = WireCube::new(
+            x - VOXEL_SIZE/2.0,
+            y - VOXEL_SIZE/2.0,
+            z - VOXEL_SIZE/2.0,
+            WORLD_SIZE as f32 * VOXEL_SIZE,
+            0.0,
+            0.0,
+            0.0
+        );
         
         let a = Point3::new(-VOXEL_SIZE/2.0, -VOXEL_SIZE/2.0, 0.0);
         let b = Point3::new(VOXEL_SIZE/2.0, -VOXEL_SIZE/2.0, 0.0);

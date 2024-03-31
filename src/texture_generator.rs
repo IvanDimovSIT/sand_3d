@@ -13,10 +13,10 @@ impl TextureGenerator {
         let mut texture_manager = TextureManager::new();
         let mut textures: HashMap<u32, Rc<Texture>> = HashMap::new();
         
-        let sand_texture = texture_manager.add(Path::new("textures/texture1.png"), "sand");
+        let sand_texture = texture_manager.add(Path::new("textures/sand.png"), "sand");
         textures.insert(VoxelMaterial::Sand.get_id(), sand_texture);
 
-        let water_texture = texture_manager.add(Path::new("textures/texture1.png"), "sand");
+        let water_texture = texture_manager.add(Path::new("textures/water.png"), "water");
         textures.insert(VoxelMaterial::Water.get_id(), water_texture);
 
 
