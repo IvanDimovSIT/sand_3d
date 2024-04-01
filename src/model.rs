@@ -5,7 +5,10 @@ pub enum VoxelMaterial {
     Water,
     Metal,
     Salt,
-    SaltWater
+    SaltWater,
+    Steam,
+    Lava,
+    Stone
 }
 impl VoxelMaterial {
     pub fn get_id(&self) -> u32 {
@@ -16,6 +19,9 @@ impl VoxelMaterial {
             VoxelMaterial::Metal => 3,
             VoxelMaterial::Salt => 4,
             VoxelMaterial::SaltWater => 5,
+            VoxelMaterial::Steam => 6,
+            VoxelMaterial::Stone => 7,
+            VoxelMaterial::Lava => 8,
         }
     }
 }

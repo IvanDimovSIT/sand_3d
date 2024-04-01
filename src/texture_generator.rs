@@ -28,6 +28,15 @@ impl TextureGenerator {
         let salt_water_texture = texture_manager.add(Path::new("textures/salt_water.png"), "salt_water");
         textures.insert(VoxelMaterial::SaltWater.get_id(), salt_water_texture);
 
+        let steam_texture = texture_manager.add(Path::new("textures/steam.png"), "steam");
+        textures.insert(VoxelMaterial::Steam.get_id(), steam_texture);
+
+        let stone_texture = texture_manager.add(Path::new("textures/stone.png"), "stone");
+        textures.insert(VoxelMaterial::Stone.get_id(), stone_texture);
+
+        let lava_texture = texture_manager.add(Path::new("textures/lava.png"), "lava");
+        textures.insert(VoxelMaterial::Lava.get_id(), lava_texture);
+
 
         Self { texture_manager, textures}
     }

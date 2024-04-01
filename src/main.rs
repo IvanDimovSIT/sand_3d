@@ -65,8 +65,9 @@ fn main() {
             scene_nodes = scene_generator.generate_scene(&mut window, &world);
             println!("generating {} objects", scene_nodes.len());
         }
-        world.set(model::VoxelMaterial::SaltWater, 1, WORLD_SIZE-1, 1);
+        world.set(model::VoxelMaterial::Water, 1, WORLD_SIZE-1, 1);
         world.set(model::VoxelMaterial::Salt, WORLD_SIZE-3, WORLD_SIZE-1, WORLD_SIZE-3);
+        world.set(model::VoxelMaterial::Lava, 1, WORLD_SIZE-1, WORLD_SIZE/2);
         
         if total_render_time.as_millis() > 80 {
             should_generate = voxel_simulator.next_step(&mut world);

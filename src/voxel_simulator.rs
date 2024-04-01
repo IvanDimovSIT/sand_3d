@@ -199,6 +199,39 @@ impl VoxelSimulator {
             }
         }
     }
+
+    fn simulate_gas(
+        &mut self,
+        world: &mut World,
+        has_changed: &mut bool,
+        material: VoxelMaterial,
+        properties: MaterialProperties,
+        x: usize,
+        y: usize,
+        z: usize) {
+        let mut neighbours = vec![];
+        
+        if self.rng.gen_bool(properties.activity as f64){
+            neighbours = self.all_neighbours.clone();
+        }else{
+            let mut neighbours = self.up_neighbours.clone();
+            neighbours.append(&mut self.side_neighbours.clone());
+        }
+        neighbours.shuffle(&mut self.rng);
+
+        for i in neighbours {
+            let other_x = x as isize + i.0;
+            let other_y = y as isize + i.1;
+            let other_z = z as isize + i.2;
+            if other_x < 0 || other_y < 0 || other_z < 0 {
+                continue;
+            }
+            if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize) {
+                *has_changed = true;
+                return;
+            }
+        }
+    }
     
     fn simulate_voxel(&mut self, world: &mut World, has_changed: &mut bool, x: usize, y: usize, z: usize) {
         let material = world.get(x, y, z);
@@ -207,6 +240,7 @@ impl VoxelSimulator {
             MaterialType::SOLID => {},
             MaterialType::LIQUID => {self.simulate_liquid(world, has_changed, material, material_properties, x, y, z)},
             MaterialType::POWDER => {self.simulate_powder(world, has_changed, material, material_properties, x, y, z)},
+            MaterialType::GAS => {self.simulate_gas(world, has_changed, material, material_properties, x, y, z)},
         }
     }
 
