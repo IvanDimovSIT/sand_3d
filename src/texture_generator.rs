@@ -19,6 +19,15 @@ impl TextureGenerator {
         let water_texture = texture_manager.add(Path::new("textures/water.png"), "water");
         textures.insert(VoxelMaterial::Water.get_id(), water_texture);
 
+        let metal_texture = texture_manager.add(Path::new("textures/metal.png"), "metal");
+        textures.insert(VoxelMaterial::Metal.get_id(), metal_texture);
+
+        let salt_texture = texture_manager.add(Path::new("textures/salt.png"), "salt");
+        textures.insert(VoxelMaterial::Salt.get_id(), salt_texture);
+
+        let salt_water_texture = texture_manager.add(Path::new("textures/salt_water.png"), "salt_water");
+        textures.insert(VoxelMaterial::SaltWater.get_id(), salt_water_texture);
+
 
         Self { texture_manager, textures}
     }

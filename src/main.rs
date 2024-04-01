@@ -6,6 +6,7 @@ mod texture_generator;
 mod wire_cube;
 mod material_properties;
 mod voxel_simulator;
+mod material_reactions;
 
 use std::cell::RefCell;
 use std::path::Path;
@@ -45,6 +46,7 @@ fn main() {
     world.set(model::VoxelMaterial::Sand, 3, 7, 2); // Initial setup
     world.set(model::VoxelMaterial::Sand, 2, 8, 2); // Initial setup
     world.set(model::VoxelMaterial::Water, 3, 9, 3);
+    world.set(model::VoxelMaterial::Metal, 3, 0, 4);
 
     let scene_generator = SceneGenerator::new(ORIGIN_X, ORIGIN_Y, ORIGIN_Z);
     let mut should_generate = true;
@@ -63,8 +65,8 @@ fn main() {
             scene_nodes = scene_generator.generate_scene(&mut window, &world);
             println!("generating {} objects", scene_nodes.len());
         }
-        world.set(model::VoxelMaterial::Water, 1, WORLD_SIZE-1, 1);
-        world.set(model::VoxelMaterial::Sand, WORLD_SIZE-3, WORLD_SIZE-1, WORLD_SIZE-3);
+        world.set(model::VoxelMaterial::SaltWater, 1, WORLD_SIZE-1, 1);
+        world.set(model::VoxelMaterial::Salt, WORLD_SIZE-3, WORLD_SIZE-1, WORLD_SIZE-3);
         
         if total_render_time.as_millis() > 80 {
             should_generate = voxel_simulator.next_step(&mut world);

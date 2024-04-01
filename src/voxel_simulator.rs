@@ -2,44 +2,34 @@ use std::any::Any;
 
 use kiss3d::resource::Material;
 use rand::{rngs::ThreadRng, thread_rng, Rng};
+use rand::seq::SliceRandom;
 
+use crate::material_reactions::MaterialReactions;
 use crate::{material_properties::{MaterialProperties, MaterialType}, model::{VoxelMaterial, World, WORLD_SIZE}};
 
-enum Direction{
-    Front,
-    FrontRight,
-    Right,
-    BackRight,
-    Back,
-    BackLeft,
-    Left,
-    FrontLeft
-}
-
 pub struct VoxelSimulator{
-    rng: ThreadRng
+    rng: ThreadRng,
+    down_neighbours: Vec<(isize, isize, isize)>,
+    side_neighbours: Vec<(isize, isize, isize)>,
+    up_neighbours: Vec<(isize, isize, isize)>,
+    all_neighbours: Vec<(isize, isize, isize)>
 }
 impl VoxelSimulator {
     pub fn new() -> VoxelSimulator {
-        Self { rng: thread_rng() }
+        let down_neighbours = vec![(-1,-1,1), (0,-1,1), (1,-1,1), (1,-1,0), (1,-1,-1), (0,-1,-1), (-1,-1,-1), (-1,-1,0)];
+        let side_neighbours = vec![(-1,0,1), (0,0,1), (1,0,1), (1,0,0), (1,0,-1), (0,0,-1), (-1,0,-1), (-1,0,0)];
+        let up_neighbours = vec![(-1,1,1), (0,1,1), (1,1,1), (1,1,0), (1,1,-1), (0,1,-1), (-1,1,-1), (-1,1,0), (0,1,0)];
+        let mut all_neighbours = vec![(0,-1,0)];
+        all_neighbours.append(&mut down_neighbours.clone());
+        all_neighbours.append(&mut side_neighbours.clone());
+        all_neighbours.append(&mut up_neighbours.clone());
+
+
+        Self { rng: thread_rng(), down_neighbours, side_neighbours, up_neighbours, all_neighbours }
     }
 
     fn check_activity(&mut self, properties: &MaterialProperties) -> bool {
         properties.activity >= 1.0 || properties.activity > self.rng.gen_range(0.0..1.0)
-    }
-
-    fn get_direction(&mut self) -> Direction {
-        match self.rng.gen_range(0..=7) {
-            0 => Direction::Front,
-            1 => Direction::FrontRight,
-            2 => Direction::Right,
-            3 => Direction::BackRight,
-            4 => Direction::Back,
-            5 => Direction::BackLeft,
-            6 => Direction::Left,
-            7 => Direction::FrontLeft,
-            _ => unreachable!(),
-        }
     }
 
     fn swap(
@@ -61,13 +51,56 @@ impl VoxelSimulator {
             true
         }else{
             let other_properties = MaterialProperties::new(&other);
-            if properties.weight > other_properties.weight {
+            if matches!(other_properties.material_type, MaterialType::SOLID) {
+                false
+            }else if properties.weight > other_properties.weight {
                 world.set(material, x2, y2, z2);
                 world.set(other, x1, y1, z1);
 
                 true
             }else{
                 false
+            }
+        }
+    }
+
+    fn check_reaction(
+        &mut self,
+        world: &mut World,
+        has_changed: &mut bool,
+        x: usize,
+        y: usize,
+        z: usize){
+        let material = world.get(x, y, z);
+        let mut reactions = MaterialReactions::new(&material);
+        if reactions.is_empty() {
+            return;
+        }
+        
+        reactions.shuffle(&mut self.rng);
+        let mut check_neighbours = self.all_neighbours.clone();
+        check_neighbours.shuffle(&mut self.rng);
+        for i in reactions {
+            if !self.rng.gen_bool(i.probability as f64) {
+                continue;
+            }
+
+            for j in &check_neighbours {
+                let other_x = j.0 + x as isize;
+                let other_y = j.1 + y as isize;
+                let other_z = j.2 + z as isize;
+                if other_x < 0 || other_x >= WORLD_SIZE as isize ||
+                    other_y < 0 || other_y >= WORLD_SIZE as isize ||
+                    other_z < 0 || other_z >= WORLD_SIZE as isize {
+                    continue;
+                }
+
+                if world.get(other_x as usize, other_y as usize, other_z as usize).get_id() == i.other_material.get_id() {
+                    world.set(i.first_product, x, y, z);
+                    world.set(i.second_product, other_x as usize, other_y as usize, other_z as usize);
+                    *has_changed = true;
+                    return;
+                }
             }
         }
     }
@@ -86,26 +119,19 @@ impl VoxelSimulator {
                 *has_changed = true;
                 return;
             }
-            if self.swap(world, material, &properties, x, y, z, x+1, y-1, z) {
-                *has_changed = true;
-                return;
-            }
-            if self.swap(world, material, &properties, x, y, z, x, y-1, z+1) {
-                *has_changed = true;
-                return;
-            }
-            if self.swap(world, material, &properties, x, y, z, x+1, y-1, z+1) {
-                *has_changed = true;
-                return;
-            }
-            if x > 0 {
-                if self.swap(world, material, &properties, x, y, z, x-1, y-1, z) {
-                    *has_changed = true;
-                    return;
+            
+            let mut down_neighbours = self.down_neighbours.clone();
+            down_neighbours.shuffle(&mut self.rng);
+
+            for i in down_neighbours {
+                let other_x = x as isize + i.0;
+                let other_y = y as isize + i.1;
+                let other_z = z as isize + i.2;
+                if other_x < 0 || other_y < 0 || other_z < 0 {
+                    continue;
                 }
-            }
-            if z > 0 {
-                if self.swap(world, material, &properties, x, y, z, x, y-1, z-1) {
+
+                if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize) {
                     *has_changed = true;
                     return;
                 }
@@ -115,31 +141,22 @@ impl VoxelSimulator {
         if !self.check_activity(&properties){
             return;
         }
-        match self.get_direction() {
-            Direction::Front => if self.swap(world, material, &properties, x, y, z, x, y, z+1) {
+
+        let mut side_neighbours = self.side_neighbours.clone();
+        side_neighbours.shuffle(&mut self.rng);
+
+        for i in side_neighbours {
+            let other_x = x as isize + i.0;
+            let other_y = y as isize + i.1;
+            let other_z = z as isize + i.2;
+            if other_x < 0 || other_y < 0 || other_z < 0 {
+                continue;
+            }
+
+            if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize) {
                 *has_changed = true;
-            },
-            Direction::FrontRight => if self.swap(world, material, &properties, x, y, z, x+1, y, z+1) {
-                *has_changed = true;
-            },
-            Direction::Right => if self.swap(world, material, &properties, x, y, z, x+1, y, z) {
-                *has_changed = true;
-            },
-            Direction::BackRight => if z > 0 && self.swap(world, material, &properties, x, y, z, x+1, y, z-1) {
-                *has_changed = true;
-            },
-            Direction::Back => if z > 0 && self.swap(world, material, &properties, x, y, z, x, y, z-1) {
-                *has_changed = true;
-            },
-            Direction::BackLeft => if x > 0 && z > 0 && self.swap(world, material, &properties, x, y, z, x-1, y, z-1) {
-                *has_changed = true;
-            },
-            Direction::Left => if x > 0 && self.swap(world, material, &properties, x, y, z, x-1, y, z) {
-                *has_changed = true;
-            },
-            Direction::FrontLeft => if x > 0 && self.swap(world, material, &properties, x, y, z, x-1, y, z+1) {
-                *has_changed = true;
-            },
+                return;
+            }
         }
     }
 
@@ -152,39 +169,33 @@ impl VoxelSimulator {
         x: usize,
         y: usize,
         z: usize) {
-        if y > 0 {
-            if self.swap(world, material, &properties, x, y, z, x, y-1, z) {
-                *has_changed = true;
-                return;
-            }
-            
-            if !self.check_activity(&properties) {
-                return;
-            }
+        if y <= 0 {
+            return;
+        }
 
-            if self.swap(world, material, &properties, x, y, z, x+1, y-1, z) {
+        if self.swap(world, material, &properties, x, y, z, x, y-1, z) {
+            *has_changed = true;
+            return;
+        }
+
+        if !self.check_activity(&properties){
+            return;
+        }
+
+        let mut down_neighbours = self.down_neighbours.clone();
+        down_neighbours.shuffle(&mut self.rng);
+    
+        for i in down_neighbours {
+            let other_x = x as isize + i.0;
+            let other_y = y as isize + i.1;
+            let other_z = z as isize + i.2;
+            if other_x < 0 || other_y < 0 || other_z < 0 {
+                continue;
+            }
+    
+            if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize) {
                 *has_changed = true;
                 return;
-            }
-            if self.swap(world, material, &properties, x, y, z, x, y-1, z+1) {
-                *has_changed = true;
-                return;
-            }
-            if self.swap(world, material, &properties, x, y, z, x+1, y-1, z+1) {
-                *has_changed = true;
-                return;
-            }
-            if x > 0 {
-                if self.swap(world, material, &properties, x, y, z, x-1, y-1, z) {
-                    *has_changed = true;
-                    return;
-                }
-            }
-            if z > 0 {
-                if self.swap(world, material, &properties, x, y, z, x, y-1, z-1) {
-                    *has_changed = true;
-                    return;
-                }
             }
         }
     }
@@ -209,6 +220,7 @@ impl VoxelSimulator {
                     }
                     
                     self.simulate_voxel(world, &mut has_changed, x, y, z);
+                    self.check_reaction(world, &mut has_changed, x, y, z);
                 }
             }
         }
