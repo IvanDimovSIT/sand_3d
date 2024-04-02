@@ -1307,6 +1307,7 @@ version = "0.1.0"
 dependencies = [
  "kiss3d",
  "rand",
+ "rayon",
 ]
 
 [[package]]

@@ -1,6 +1,3 @@
-use std::any::Any;
-
-use kiss3d::resource::Material;
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 use rand::seq::SliceRandom;
 
@@ -38,16 +35,21 @@ impl VoxelSimulator {
         material: VoxelMaterial,
         properties: &MaterialProperties,
         x1: usize, y1: usize, z1: usize,
-        x2: usize, y2: usize, z2: usize) -> bool {
+        x2: usize, y2: usize, z2: usize,
+        mask: &mut [bool]) -> bool {
         if x2 >= WORLD_SIZE || y2 >= WORLD_SIZE || z2 >= WORLD_SIZE {
             return false;
+        }
+        if mask[World::coordiantes_to_index(x1, y1, z1)] || mask[World::coordiantes_to_index(x2, y2, z2)] {
+            false;
         } 
 
         let other = world.get(x2, y2, z2);
         if matches!(other, VoxelMaterial::Air){
             world.set(material, x2, y2, z2);
             world.set(other, x1, y1, z1);
-            
+            mask[World::coordiantes_to_index(x2, y2, z2)] = true;
+
             true
         }else{
             let other_properties = MaterialProperties::new(&other);
@@ -56,6 +58,9 @@ impl VoxelSimulator {
             }else if properties.weight > other_properties.weight {
                 world.set(material, x2, y2, z2);
                 world.set(other, x1, y1, z1);
+
+                mask[World::coordiantes_to_index(x1, y1, z1)] = true;
+                mask[World::coordiantes_to_index(x2, y2, z2)] = true;
 
                 true
             }else{
@@ -113,9 +118,10 @@ impl VoxelSimulator {
         properties: MaterialProperties,
         x: usize,
         y: usize,
-        z: usize) {
+        z: usize,
+        mask: &mut [bool]) {
         if y > 0 {
-            if self.swap(world, material, &properties, x, y, z, x, y-1, z) {
+            if self.swap(world, material, &properties, x, y, z, x, y-1, z, mask) {
                 *has_changed = true;
                 return;
             }
@@ -131,7 +137,7 @@ impl VoxelSimulator {
                     continue;
                 }
 
-                if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize) {
+                if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize, mask) {
                     *has_changed = true;
                     return;
                 }
@@ -153,7 +159,7 @@ impl VoxelSimulator {
                 continue;
             }
 
-            if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize) {
+            if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize, mask) {
                 *has_changed = true;
                 return;
             }
@@ -168,12 +174,13 @@ impl VoxelSimulator {
         properties: MaterialProperties,
         x: usize,
         y: usize,
-        z: usize) {
+        z: usize,
+        mask: &mut [bool]) {
         if y <= 0 {
             return;
         }
 
-        if self.swap(world, material, &properties, x, y, z, x, y-1, z) {
+        if self.swap(world, material, &properties, x, y, z, x, y-1, z, mask) {
             *has_changed = true;
             return;
         }
@@ -193,7 +200,7 @@ impl VoxelSimulator {
                 continue;
             }
     
-            if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize) {
+            if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize, mask) {
                 *has_changed = true;
                 return;
             }
@@ -208,7 +215,8 @@ impl VoxelSimulator {
         properties: MaterialProperties,
         x: usize,
         y: usize,
-        z: usize) {
+        z: usize,
+        mask: &mut [bool]) {
         let mut neighbours = vec![];
         
         if self.rng.gen_bool(properties.activity as f64){
@@ -226,26 +234,27 @@ impl VoxelSimulator {
             if other_x < 0 || other_y < 0 || other_z < 0 {
                 continue;
             }
-            if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize) {
+            if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize, mask) {
                 *has_changed = true;
                 return;
             }
         }
     }
     
-    fn simulate_voxel(&mut self, world: &mut World, has_changed: &mut bool, x: usize, y: usize, z: usize) {
+    fn simulate_voxel(&mut self, world: &mut World, has_changed: &mut bool, x: usize, y: usize, z: usize, mask: &mut [bool]) {
         let material = world.get(x, y, z);
         let material_properties = MaterialProperties::new(&material);
         match material_properties.material_type {
             MaterialType::SOLID => {},
-            MaterialType::LIQUID => {self.simulate_liquid(world, has_changed, material, material_properties, x, y, z)},
-            MaterialType::POWDER => {self.simulate_powder(world, has_changed, material, material_properties, x, y, z)},
-            MaterialType::GAS => {self.simulate_gas(world, has_changed, material, material_properties, x, y, z)},
+            MaterialType::LIQUID => {self.simulate_liquid(world, has_changed, material, material_properties, x, y, z, mask)},
+            MaterialType::POWDER => {self.simulate_powder(world, has_changed, material, material_properties, x, y, z, mask)},
+            MaterialType::GAS => {self.simulate_gas(world, has_changed, material, material_properties, x, y, z, mask)},
         }
     }
 
     pub fn next_step(&mut self, world: &mut World) -> bool {
         let mut has_changed = false;
+        let mut mask = [false; WORLD_SIZE*WORLD_SIZE*WORLD_SIZE];
         for y in 0..WORLD_SIZE {
             for z in 0..WORLD_SIZE {
                 for x in 0..WORLD_SIZE {
@@ -253,7 +262,7 @@ impl VoxelSimulator {
                         continue;
                     }
                     
-                    self.simulate_voxel(world, &mut has_changed, x, y, z);
+                    self.simulate_voxel(world, &mut has_changed, x, y, z, &mut mask);
                     self.check_reaction(world, &mut has_changed, x, y, z);
                 }
             }

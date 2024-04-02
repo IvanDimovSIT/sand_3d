@@ -27,6 +27,7 @@ const FPS: u64 = 60;
 const ORIGIN_X: f32 = -VOXEL_SIZE * WORLD_SIZE as f32 / 2.0;
 const ORIGIN_Y: f32 = -VOXEL_SIZE * WORLD_SIZE as f32 * 1.2;
 const ORIGIN_Z: f32 = 50.0;
+const TIME_BETWEEN_STEPS_US: u128 = 80_000;
 
 //const LIGHT_POSITION_X: f32 = ORIGIN_X + VOXEL_SIZE * WORLD_SIZE as f32 / 3.0;
 //const LIGHT_POSITION_Y: f32 = ORIGIN_Y + VOXEL_SIZE * WORLD_SIZE as f32 * 1.2;
@@ -42,37 +43,56 @@ fn main() {
 
     let mut world = World::new();
     let mut voxel_simulator = VoxelSimulator::new();
-    world.set(model::VoxelMaterial::Sand, 2, 7, 2); // Initial setup
-    world.set(model::VoxelMaterial::Sand, 3, 7, 2); // Initial setup
-    world.set(model::VoxelMaterial::Sand, 2, 8, 2); // Initial setup
-    world.set(model::VoxelMaterial::Water, 3, 9, 3);
-    world.set(model::VoxelMaterial::Metal, 3, 0, 4);
+    //world.set(model::VoxelMaterial::Sand, 2, 7, 2); // Initial setup
+    //world.set(model::VoxelMaterial::Sand, 3, 7, 2); // Initial setup
+    //world.set(model::VoxelMaterial::Sand, 2, 8, 2); // Initial setup
+    //world.set(model::VoxelMaterial::Water, 3, 9, 3);
+    //world.set(model::VoxelMaterial::Metal, 3, 0, 4);
 
     let scene_generator = SceneGenerator::new(ORIGIN_X, ORIGIN_Y, ORIGIN_Z);
     let mut should_generate = true;
     let mut scene_nodes: Vec<SceneNode> = vec![]; 
-    let mut total_render_time = Duration::new(0, 0);
-    let mut start_time = Instant::now();
+
+    let mut render_time;
+    let mut generation_time = 0;
+    let mut simulation_time = 0;
+    let mut render_start_time = Instant::now();
+    let mut generation_start_time;
+    let mut simulation_start_time;
+    let mut total_render_time = 0;
     while window.render() {
-        total_render_time += start_time.elapsed();
+        render_time = render_start_time.elapsed().as_micros();
+        total_render_time += render_time;
 
         scene_generator.draw_border(&mut window);
         if should_generate {
+            generation_start_time = Instant::now();
             should_generate = false;
             for i in &mut scene_nodes {
                 window.remove_node(i);
             }
             scene_nodes = scene_generator.generate_scene(&mut window, &world);
-            println!("generating {} objects", scene_nodes.len());
+            generation_time = generation_start_time.elapsed().as_micros();
         }
         world.set(model::VoxelMaterial::Water, 1, WORLD_SIZE-1, 1);
         world.set(model::VoxelMaterial::Salt, WORLD_SIZE-3, WORLD_SIZE-1, WORLD_SIZE-3);
         world.set(model::VoxelMaterial::Lava, 1, WORLD_SIZE-1, WORLD_SIZE/2);
         
-        if total_render_time.as_millis() > 80 {
+        if total_render_time > TIME_BETWEEN_STEPS_US {
+            simulation_start_time = Instant::now();
             should_generate = voxel_simulator.next_step(&mut world);
-            total_render_time = Duration::new(0, 0);
+            simulation_time = simulation_start_time.elapsed().as_micros();
+            total_render_time -= TIME_BETWEEN_STEPS_US;
         }
-        start_time = Instant::now();
+
+        println!(
+            "Render time: {}ms {}us; Generation time: {}ms {}us; Simulation time: {}ms {}us",
+            render_time/1000, render_time%1000,
+            generation_time/1000, generation_time%1000,
+            simulation_time/1000, simulation_time%1000
+        );
+        simulation_time = 0;
+        generation_time = 0;
+        render_start_time = Instant::now();
     }
 }
