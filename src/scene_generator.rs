@@ -1,8 +1,8 @@
-use std::{cell::RefCell, f32::consts::PI, rc::Rc};
+use std::{cell::RefCell, collections::HashSet, f32::consts::PI, rc::Rc};
 
-use kiss3d::{nalgebra::{OPoint, Point, Point2, Point3, Quaternion, Translation, Unit, UnitQuaternion, Vector3}, resource::{Material, Mesh}, scene::SceneNode, window::Window};
+use kiss3d::{nalgebra::{Point2, Point3, Quaternion, Translation, Unit, UnitQuaternion, Vector3}, resource::Mesh, scene::SceneNode, window::Window};
 
-use crate::{model::{VoxelMaterial, VoxelNeighbours, World, WORLD_SIZE}, texture_generator::{self, TextureGenerator}, wire_cube::{self, WireCube}};
+use crate::{model::{VoxelMaterial, VoxelNeighbours, World, WORLD_SIZE}, scene_map::SceneMap, texture_generator::TextureGenerator, wire_cube::WireCube};
 
 pub const VOXEL_SIZE: f32 = 3.0;
 const BRIGHTNESS: f32 = 1.5;
@@ -167,21 +167,14 @@ impl SceneGenerator {
         nodes
     }
 
-    pub fn generate_scene(&self, window: &mut Window, world: &World) -> Vec<SceneNode> {
-        let mut nodes: Vec<SceneNode> = vec![];
-        for y in (0..WORLD_SIZE).rev() {
-            for z in 0..WORLD_SIZE {
-                for x in 0..WORLD_SIZE {
-                    if matches!(world.get(x, y, z), VoxelMaterial::Air) {
-                        continue;
-                    }
-
-                    nodes.append(&mut self.generate_nodes(window, world, x, y, z));
-                }
+    pub fn generate_scene(&self, window: &mut Window, world: &World, scene_map: &mut SceneMap, changed: HashSet<usize>) {
+        for i in changed {
+            let (x,y,z) = World::index_to_coordinates(i);
+            if matches!(world.get_index(i), VoxelMaterial::Air) {
+                continue;
             }
+            scene_map.add_mesh(x, y, z, self.generate_nodes(window, world, x, y, z));
         }
-
-        nodes
     }
 
     pub fn draw_border(&self, window: &mut Window) {

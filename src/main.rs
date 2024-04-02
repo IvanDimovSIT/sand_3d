@@ -7,20 +7,17 @@ mod wire_cube;
 mod material_properties;
 mod voxel_simulator;
 mod material_reactions;
+mod scene_map;
 
-use std::cell::RefCell;
-use std::path::Path;
-use std::rc::Rc;
-use std::time::{Duration, Instant};
 
-use kiss3d::nalgebra::{Point3, Translation, UnitQuaternion, Vector3};
-use kiss3d::post_processing::PostProcessingEffect;
-use kiss3d::resource::{Material, MaterialManager, Mesh, TextureManager};
+use std::time::Instant;
+
 use kiss3d::scene::SceneNode;
 use kiss3d::window::Window;
 use kiss3d::light::Light;
 use model::{World, WORLD_SIZE};
 use scene_generator::{SceneGenerator, VOXEL_SIZE};
+use scene_map::SceneMap;
 use voxel_simulator::VoxelSimulator;
 
 const FPS: u64 = 60;
@@ -50,8 +47,7 @@ fn main() {
     //world.set(model::VoxelMaterial::Metal, 3, 0, 4);
 
     let scene_generator = SceneGenerator::new(ORIGIN_X, ORIGIN_Y, ORIGIN_Z);
-    let mut should_generate = true;
-    let mut scene_nodes: Vec<SceneNode> = vec![]; 
+    let mut scene_map = SceneMap::new();
 
     let mut render_time;
     let mut generation_time = 0;
@@ -65,28 +61,25 @@ fn main() {
         total_render_time += render_time;
 
         scene_generator.draw_border(&mut window);
-        if should_generate {
-            generation_start_time = Instant::now();
-            should_generate = false;
-            for i in &mut scene_nodes {
-                window.remove_node(i);
-            }
-            scene_nodes = scene_generator.generate_scene(&mut window, &world);
-            generation_time = generation_start_time.elapsed().as_micros();
-        }
+
+        generation_start_time = Instant::now();
+        let changed = scene_map.get_and_remove_changed(&mut window);
+        scene_generator.generate_scene(&mut window, &world, &mut scene_map, changed);    
+        generation_time = generation_start_time.elapsed().as_micros();
+
         world.set(model::VoxelMaterial::Water, 1, WORLD_SIZE-1, 1);
         world.set(model::VoxelMaterial::Salt, WORLD_SIZE-3, WORLD_SIZE-1, WORLD_SIZE-3);
         world.set(model::VoxelMaterial::Lava, 1, WORLD_SIZE-1, WORLD_SIZE/2);
         
         if total_render_time > TIME_BETWEEN_STEPS_US {
             simulation_start_time = Instant::now();
-            should_generate = voxel_simulator.next_step(&mut world);
+            voxel_simulator.next_step(&mut world, &mut scene_map);
             simulation_time = simulation_start_time.elapsed().as_micros();
             total_render_time -= TIME_BETWEEN_STEPS_US;
         }
 
         println!(
-            "Render time: {}ms {}us; Generation time: {}ms {}us; Simulation time: {}ms {}us",
+            "Render time: {}ms {}us; Mesh generation time: {}ms {}us; Simulation time: {}ms {}us",
             render_time/1000, render_time%1000,
             generation_time/1000, generation_time%1000,
             simulation_time/1000, simulation_time%1000

@@ -62,8 +62,20 @@ impl World {
         self.voxels[Self::coordiantes_to_index(x, y, z)]
     }
 
+    pub fn get_index(&self, index: usize) -> VoxelMaterial {
+        self.voxels[index]
+    }
+
     pub fn coordiantes_to_index(x: usize, y: usize, z: usize) -> usize {
         x + z*WORLD_SIZE + y*WORLD_SIZE*WORLD_SIZE
+    }
+
+    pub fn index_to_coordinates(index: usize) -> (usize, usize, usize) {
+        let y = index / (WORLD_SIZE * WORLD_SIZE);
+        let r = index % (WORLD_SIZE * WORLD_SIZE);
+        let z = r / WORLD_SIZE;
+        let x = r % WORLD_SIZE;
+        (x, y, z)
     }
 
     pub fn set(&mut self, material: VoxelMaterial, x: usize, y: usize, z: usize) {
@@ -94,5 +106,25 @@ impl World {
 
 
         neighbours
+    }
+}
+
+#[cfg(test)]
+mod tests{
+    use super::{World, WORLD_SIZE};
+
+    #[test]
+    fn test() {
+        for x in 0..WORLD_SIZE {
+            for y in 0..WORLD_SIZE {
+                for z in 0..WORLD_SIZE {
+                    let index = World::coordiantes_to_index(x, y, z);
+                    let (x1, y1, z1) = World::index_to_coordinates(index);
+                    assert_eq!(x, x1);
+                    assert_eq!(y, y1);
+                    assert_eq!(z, z1);
+                }
+            }
+        }
     }
 }

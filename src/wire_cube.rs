@@ -1,4 +1,4 @@
-use kiss3d::{nalgebra::Point3, window::{self, Window}};
+use kiss3d::{nalgebra::Point3, window::Window};
 
 pub struct WireCube {
     a: Point3<f32>,

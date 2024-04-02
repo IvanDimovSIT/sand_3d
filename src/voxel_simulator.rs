@@ -2,6 +2,7 @@ use rand::{rngs::ThreadRng, thread_rng, Rng};
 use rand::seq::SliceRandom;
 
 use crate::material_reactions::MaterialReactions;
+use crate::scene_map::SceneMap;
 use crate::{material_properties::{MaterialProperties, MaterialType}, model::{VoxelMaterial, World, WORLD_SIZE}};
 
 pub struct VoxelSimulator{
@@ -32,6 +33,7 @@ impl VoxelSimulator {
     fn swap(
         &mut self,
         world: &mut World,
+        scene_map: &mut SceneMap,
         material: VoxelMaterial,
         properties: &MaterialProperties,
         x1: usize, y1: usize, z1: usize,
@@ -50,6 +52,8 @@ impl VoxelSimulator {
             world.set(other, x1, y1, z1);
             mask[World::coordiantes_to_index(x2, y2, z2)] = true;
 
+            scene_map.update(x1, y1, z1);
+            scene_map.update(x2, y2, z2);
             true
         }else{
             let other_properties = MaterialProperties::new(&other);
@@ -62,6 +66,9 @@ impl VoxelSimulator {
                 mask[World::coordiantes_to_index(x1, y1, z1)] = true;
                 mask[World::coordiantes_to_index(x2, y2, z2)] = true;
 
+
+                scene_map.update(x1, y1, z1);
+                scene_map.update(x2, y2, z2);
                 true
             }else{
                 false
@@ -72,7 +79,7 @@ impl VoxelSimulator {
     fn check_reaction(
         &mut self,
         world: &mut World,
-        has_changed: &mut bool,
+        scene_map: &mut SceneMap,
         x: usize,
         y: usize,
         z: usize){
@@ -103,7 +110,8 @@ impl VoxelSimulator {
                 if world.get(other_x as usize, other_y as usize, other_z as usize).get_id() == i.other_material.get_id() {
                     world.set(i.first_product, x, y, z);
                     world.set(i.second_product, other_x as usize, other_y as usize, other_z as usize);
-                    *has_changed = true;
+                    scene_map.update(x, y, z);
+                    scene_map.update(other_x as usize, other_y as usize, other_z as usize);
                     return;
                 }
             }
@@ -113,7 +121,7 @@ impl VoxelSimulator {
     fn simulate_liquid(
         &mut self,
         world: &mut World,
-        has_changed: &mut bool,
+        scene_map: &mut SceneMap,
         material: VoxelMaterial,
         properties: MaterialProperties,
         x: usize,
@@ -121,8 +129,7 @@ impl VoxelSimulator {
         z: usize,
         mask: &mut [bool]) {
         if y > 0 {
-            if self.swap(world, material, &properties, x, y, z, x, y-1, z, mask) {
-                *has_changed = true;
+            if self.swap(world, scene_map, material, &properties, x, y, z, x, y-1, z, mask) {
                 return;
             }
             
@@ -137,8 +144,7 @@ impl VoxelSimulator {
                     continue;
                 }
 
-                if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize, mask) {
-                    *has_changed = true;
+                if self.swap(world, scene_map, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize, mask) {
                     return;
                 }
             }
@@ -159,8 +165,7 @@ impl VoxelSimulator {
                 continue;
             }
 
-            if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize, mask) {
-                *has_changed = true;
+            if self.swap(world, scene_map, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize, mask) {
                 return;
             }
         }
@@ -169,7 +174,7 @@ impl VoxelSimulator {
     fn simulate_powder(
         &mut self,
         world: &mut World,
-        has_changed: &mut bool,
+        scene_map: &mut SceneMap,
         material: VoxelMaterial,
         properties: MaterialProperties,
         x: usize,
@@ -180,8 +185,7 @@ impl VoxelSimulator {
             return;
         }
 
-        if self.swap(world, material, &properties, x, y, z, x, y-1, z, mask) {
-            *has_changed = true;
+        if self.swap(world, scene_map, material, &properties, x, y, z, x, y-1, z, mask) {
             return;
         }
 
@@ -200,8 +204,7 @@ impl VoxelSimulator {
                 continue;
             }
     
-            if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize, mask) {
-                *has_changed = true;
+            if self.swap(world, scene_map, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize, mask) {
                 return;
             }
         }
@@ -210,7 +213,7 @@ impl VoxelSimulator {
     fn simulate_gas(
         &mut self,
         world: &mut World,
-        has_changed: &mut bool,
+        scene_map: &mut SceneMap,
         material: VoxelMaterial,
         properties: MaterialProperties,
         x: usize,
@@ -234,26 +237,24 @@ impl VoxelSimulator {
             if other_x < 0 || other_y < 0 || other_z < 0 {
                 continue;
             }
-            if self.swap(world, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize, mask) {
-                *has_changed = true;
+            if self.swap(world, scene_map, material, &properties, x, y, z, other_x as usize, other_y as usize, other_z as usize, mask) {
                 return;
             }
         }
     }
     
-    fn simulate_voxel(&mut self, world: &mut World, has_changed: &mut bool, x: usize, y: usize, z: usize, mask: &mut [bool]) {
+    fn simulate_voxel(&mut self, world: &mut World, scene_map: &mut SceneMap, x: usize, y: usize, z: usize, mask: &mut [bool]) {
         let material = world.get(x, y, z);
         let material_properties = MaterialProperties::new(&material);
         match material_properties.material_type {
             MaterialType::SOLID => {},
-            MaterialType::LIQUID => {self.simulate_liquid(world, has_changed, material, material_properties, x, y, z, mask)},
-            MaterialType::POWDER => {self.simulate_powder(world, has_changed, material, material_properties, x, y, z, mask)},
-            MaterialType::GAS => {self.simulate_gas(world, has_changed, material, material_properties, x, y, z, mask)},
+            MaterialType::LIQUID => {self.simulate_liquid(world, scene_map, material, material_properties, x, y, z, mask)},
+            MaterialType::POWDER => {self.simulate_powder(world, scene_map, material, material_properties, x, y, z, mask)},
+            MaterialType::GAS => {self.simulate_gas(world, scene_map, material, material_properties, x, y, z, mask)},
         }
     }
 
-    pub fn next_step(&mut self, world: &mut World) -> bool {
-        let mut has_changed = false;
+    pub fn next_step(&mut self, world: &mut World, scene_map: &mut SceneMap) {
         let mut mask = [false; WORLD_SIZE*WORLD_SIZE*WORLD_SIZE];
         for y in 0..WORLD_SIZE {
             for z in 0..WORLD_SIZE {
@@ -262,12 +263,10 @@ impl VoxelSimulator {
                         continue;
                     }
                     
-                    self.simulate_voxel(world, &mut has_changed, x, y, z, &mut mask);
-                    self.check_reaction(world, &mut has_changed, x, y, z);
+                    self.simulate_voxel(world, scene_map, x, y, z, &mut mask);
+                    self.check_reaction(world, scene_map,  x, y, z);
                 }
             }
         }
-
-        has_changed
     }
 }

@@ -42,6 +42,7 @@ impl TextureGenerator {
     }
 
     pub fn get(&self, material: &VoxelMaterial) -> Rc<Texture> {
+        debug_assert!(self.textures.contains_key(&material.get_id()));
         self.textures.get(&material.get_id()).unwrap().clone()
     }
 }
