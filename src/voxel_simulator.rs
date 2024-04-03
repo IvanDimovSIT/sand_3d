@@ -220,12 +220,12 @@ impl VoxelSimulator {
         y: usize,
         z: usize,
         mask: &mut [bool]) {
-        let mut neighbours = vec![];
+        let mut neighbours;
         
         if self.rng.gen_bool(properties.activity as f64){
             neighbours = self.all_neighbours.clone();
         }else{
-            let mut neighbours = self.up_neighbours.clone();
+            neighbours = self.up_neighbours.clone();
             neighbours.append(&mut self.side_neighbours.clone());
         }
         neighbours.shuffle(&mut self.rng);
@@ -262,8 +262,16 @@ impl VoxelSimulator {
                     if matches!(world.get(x, y, z), VoxelMaterial::Air) {
                         continue;
                     }
-                    
                     self.simulate_voxel(world, scene_map, x, y, z, &mut mask);
+                }
+            }
+        }
+        for y in 0..WORLD_SIZE {
+            for z in 0..WORLD_SIZE {
+                for x in 0..WORLD_SIZE {
+                    if matches!(world.get(x, y, z), VoxelMaterial::Air) {
+                        continue;
+                    }           
                     self.check_reaction(world, scene_map,  x, y, z);
                 }
             }

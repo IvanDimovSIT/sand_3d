@@ -37,6 +37,12 @@ impl TextureGenerator {
         let lava_texture = texture_manager.add(Path::new("textures/lava.png"), "lava");
         textures.insert(VoxelMaterial::Lava.get_id(), lava_texture);
 
+        let wood_texture = texture_manager.add(Path::new("textures/wood.png"), "wood");
+        textures.insert(VoxelMaterial::Wood.get_id(), wood_texture);
+
+        let fire_texture = texture_manager.add(Path::new("textures/fire.png"), "fire");
+        textures.insert(VoxelMaterial::Fire.get_id(), fire_texture);
+
 
         Self { texture_manager, textures}
     }

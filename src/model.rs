@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(Clone, Copy, Debug)]
 pub enum VoxelMaterial {
     Air,
@@ -8,21 +10,42 @@ pub enum VoxelMaterial {
     SaltWater,
     Steam,
     Lava,
-    Stone
+    Stone,
+    Wood,
+    Fire
 }
 impl VoxelMaterial {
     pub fn get_id(&self) -> u32 {
         match self {
-            VoxelMaterial::Air => 0,
-            VoxelMaterial::Sand => 1,
-            VoxelMaterial::Water => 2,
-            VoxelMaterial::Metal => 3,
-            VoxelMaterial::Salt => 4,
-            VoxelMaterial::SaltWater => 5,
-            VoxelMaterial::Steam => 6,
-            VoxelMaterial::Stone => 7,
-            VoxelMaterial::Lava => 8,
+            Self::Air => 0,
+            Self::Sand => 1,
+            Self::Water => 2,
+            Self::Metal => 3,
+            Self::Salt => 4,
+            Self::SaltWater => 5,
+            Self::Steam => 6,
+            Self::Stone => 7,
+            Self::Lava => 8,
+            Self::Wood => 9,
+            Self::Fire => 10
         }
+    }
+}
+impl Display for VoxelMaterial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Self::Air => "Air",
+            Self::Sand => "Sand",
+            Self::Water => "Water",
+            Self::Metal => "Metal",
+            Self::Salt =>  "Salt",
+            Self::SaltWater => "Salt Water",
+            Self::Steam => "Steam",
+            Self::Lava => "Lava",
+            Self::Stone => "Stone",
+            Self::Wood => "Wood",
+            Self::Fire => "Fire"}
+        )
     }
 }
 

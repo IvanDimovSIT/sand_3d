@@ -63,7 +63,7 @@ fn main() {
     let scene_generator = SceneGenerator::new(ORIGIN_X, ORIGIN_Y, ORIGIN_Z);
     let mut paused = false;
     let mut scene_map = SceneMap::new();
-    let mut cursor = Cursor::new(WORLD_SIZE/2, WORLD_SIZE-1, WORLD_SIZE/2, model::VoxelMaterial::Sand);
+    let mut cursor = Cursor::new(WORLD_SIZE/2, WORLD_SIZE-1, WORLD_SIZE/2);
     let mut render_time;
     let mut generation_time = 0;
     let mut simulation_time = 0;
@@ -85,6 +85,7 @@ fn main() {
             e.inhibited = true;
             match e.value {
                 WindowEvent::Key(key, action, _modif) => {
+                    cursor.input_key(key, action);
                     match key {
                         kiss3d::event::Key::Space => if matches!(action, kiss3d::event::Action::Press) { paused = !paused},
                         _ => {move_camera(key, &mut eye_x, eye_y, &mut eye_z, at, &mut fp_camera)},
@@ -102,13 +103,9 @@ fn main() {
                 _ => {e.inhibited = false;}
             }
         }
-        world.set(model::VoxelMaterial::Water, 1, WORLD_SIZE-1, 1);
-        world.set(model::VoxelMaterial::Salt, WORLD_SIZE-3, WORLD_SIZE-1, WORLD_SIZE-3);
-        world.set(model::VoxelMaterial::Lava, 1, WORLD_SIZE-1, WORLD_SIZE/2);
         
         if total_render_time > TIME_BETWEEN_STEPS_US {
             if !paused {
-                debug_assert!(!paused);
                 simulation_start_time = Instant::now();
                 voxel_simulator.next_step(&mut world, &mut scene_map);
                 simulation_time = simulation_start_time.elapsed().as_micros();
@@ -124,6 +121,7 @@ fn main() {
         );
         
         cursor.draw(&mut window, ORIGIN_X, ORIGIN_Y, ORIGIN_Z);
+        cursor.draw_selected(&mut window);
 
         simulation_time = 0;
         generation_time = 0;

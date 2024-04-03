@@ -15,7 +15,7 @@ impl MaterialReactions {
                     other_material: VoxelMaterial::Water,
                     first_product: VoxelMaterial::Air,
                     second_product: VoxelMaterial::SaltWater,
-                    probability: 0.2
+                    probability: 0.1
                 }
             ],
             VoxelMaterial::Steam => vec![
@@ -36,6 +36,38 @@ impl MaterialReactions {
                 MaterialReactions{
                     other_material: VoxelMaterial::SaltWater,
                     first_product: VoxelMaterial::Stone,
+                    second_product: VoxelMaterial::Steam,
+                    probability: 1.0
+                },
+                MaterialReactions{
+                    other_material: VoxelMaterial::Wood,
+                    first_product: VoxelMaterial::Lava,
+                    second_product: VoxelMaterial::Fire,
+                    probability: 0.9
+                },
+            ],
+            VoxelMaterial::Fire => vec![
+                MaterialReactions{ 
+                    other_material: VoxelMaterial::Air,
+                    first_product: VoxelMaterial::Air,
+                    second_product: VoxelMaterial::Air,
+                    probability: 0.03
+                },
+                MaterialReactions{ 
+                    other_material: VoxelMaterial::Wood,
+                    first_product: VoxelMaterial::Fire,
+                    second_product: VoxelMaterial::Fire,
+                    probability: 0.6
+                },
+                MaterialReactions{ 
+                    other_material: VoxelMaterial::Water,
+                    first_product: VoxelMaterial::Air,
+                    second_product: VoxelMaterial::Steam,
+                    probability: 1.0
+                },
+                MaterialReactions{ 
+                    other_material: VoxelMaterial::SaltWater,
+                    first_product: VoxelMaterial::Air,
                     second_product: VoxelMaterial::Steam,
                     probability: 1.0
                 },
