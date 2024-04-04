@@ -4,6 +4,8 @@ const MAX_EYE_Z: f32 = 100.0;
 const MIN_EYE_Z: f32 = -100.0;
 const MAX_EYE_X: f32 = 100.0;
 const MIN_EYE_X: f32 = -100.0;
+const MIN_EYE_Y: f32 = -40.0;
+const MAX_EYE_Y: f32 = 20.0;
 
 pub struct Camera{
     eye_x: f32,
@@ -39,6 +41,12 @@ impl Camera{
     pub fn move_x(&mut self, x: f32) {
         self.eye_x += x;
         self.eye_x = self.eye_x.max(MIN_EYE_X).min(MAX_EYE_X);
+        self.update_camera();
+    }
+
+    pub fn move_y(&mut self, y: f32) {
+        self.eye_y += y;
+        self.eye_y = self.eye_y.max(MIN_EYE_Y).min(MAX_EYE_Y);
         self.update_camera();
     }
 
