@@ -1,17 +1,21 @@
-use std::{collections::VecDeque, rc::Rc};
+use std::{collections::VecDeque, mem::take, rc::Rc};
 
-use kiss3d::{event::{Action, Key, MouseButton}, nalgebra::{Point2, Point3}, text::Font, window::Window};
+use kiss3d::{event::{Action, Key, MouseButton}, nalgebra::{Point2, Point3, Translation2}, scene::PlanarSceneNode, text::Font, window::Window};
 
 use crate::{model::{VoxelMaterial, World, WORLD_SIZE}, scene_generator::VOXEL_SIZE, scene_map::SceneMap, wire_cube::WireCube};
 
 const FONT_SIZE: f32 = 46.0;
+const SELECTED_BG_WIDTH: f32 = 400.0;
+const SELECTED_BG_HEIGHT: f32 = 50.0;
+const LINES_WIDTH: f32 = 2.0;
 
 pub struct Cursor{
     x: usize,
     y: usize,
     z: usize,
     materials: VecDeque<VoxelMaterial>,
-    font: Rc<Font>
+    font: Rc<Font>,
+    selected_bg: Option<PlanarSceneNode>
 }
 impl Cursor{
     pub fn new(x: usize, y: usize, z: usize) -> Self {
@@ -29,7 +33,7 @@ impl Cursor{
         ]);
         let font = Font::default();
         
-        Self { x, y, z, materials, font }
+        Self { x, y, z, materials, font, selected_bg: None }
     }
 
     pub fn input_key(&mut self, key: Key, action: Action) {
@@ -90,7 +94,32 @@ impl Cursor{
         wire_cube.draw(window);
     }
 
-    pub fn draw_selected(&self, window: &mut Window) {
+    pub fn on_resize(&mut self, x: u32, y: u32) {
+        if self.selected_bg.is_none() {
+            return;
+        }
+        let mut bg = take(&mut self.selected_bg).unwrap();
+        let translation = Translation2::new(
+            LINES_WIDTH-(x as f32)/2.0,
+            LINES_WIDTH+(y as f32)/2.0
+        );
+        bg.set_local_translation(translation);
+        self.selected_bg = Some(bg);
+    }
+
+    pub fn draw_selected(&mut self, window: &mut Window) {
+        if self.selected_bg.is_none() {
+            let mut bg = window.add_rectangle(SELECTED_BG_WIDTH, SELECTED_BG_HEIGHT);
+            let translation = Translation2::new(
+                LINES_WIDTH-(window.width() as f32)/2.0,
+                LINES_WIDTH+(window.height() as f32)/2.0
+            );
+            bg.set_local_translation(translation);
+            bg.set_color(1.0, 1.0, 1.0);
+            bg.set_lines_width(LINES_WIDTH);
+            bg.set_lines_color(Some(Point3::new(0.0, 0.0, 0.0)));
+            self.selected_bg = Some(bg);
+        }
         window.draw_text(
             &format!("Selected:{}", self.materials.front().unwrap()),
             &Point2::new(0.0, 0.0),
@@ -98,5 +127,11 @@ impl Cursor{
             &self.font,
             &Point3::new(0.0, 0.0, 0.0)
         );
+    }
+
+    pub fn delete_nodes(&mut self, window: &mut Window) {
+        if let Some(mut bg) =  take(&mut self.selected_bg) {
+            window.remove_planar_node(&mut bg);
+        }
     }
 }

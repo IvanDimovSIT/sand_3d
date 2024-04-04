@@ -9,9 +9,11 @@ mod voxel_simulator;
 mod material_reactions;
 mod scene_map;
 mod cursor;
+mod camera;
 
 use std::time::Instant;
 
+use camera::Camera;
 use cursor::Cursor;
 use kiss3d::camera::FirstPerson;
 use kiss3d::event::Key;
@@ -30,31 +32,21 @@ const ORIGIN_Y: f32 = -VOXEL_SIZE * WORLD_SIZE as f32 * 1.5;
 const ORIGIN_Z: f32 = 85.0;
 const TIME_BETWEEN_STEPS_US: u128 = 50_000;
 
-fn move_camera(key: Key, eye_x: &mut f32, eye_y: f32, eye_z: &mut f32, at: Point<f32, 3>, fp_camera: &mut FirstPerson) {
-    match key {
-        Key::W => { *eye_z += VOXEL_SIZE },
-        Key::S => { *eye_z -= VOXEL_SIZE },
-        Key::A => { *eye_x += VOXEL_SIZE },
-        Key::D => { *eye_x -= VOXEL_SIZE },
-        _ => {return;},
-    }
-
-    *fp_camera = FirstPerson::new(Point3::new(*eye_x, eye_y, *eye_z), at);
-}
+const CAMERA_MOVEMENT_SPEED: f32 = 0.0002;
 
 fn main() {
     let mut window = Window::new("Sand 3D");
     window.set_framerate_limit(Some(FPS));
     window.set_background_color(0.8, 0.8, 0.9);
 
-    let (mut eye_x, eye_y, mut eye_z) = (0.0, 0.0, 0.0);
-    let eye = Point3::new(eye_x, eye_y, eye_z);
-    let at = Point3::new(
+    let mut camera = Camera::new(
+        0.0,
+        0.0,
+        0.0,
         ORIGIN_X+WORLD_SIZE as f32 * VOXEL_SIZE/2.0,
         ORIGIN_Y+WORLD_SIZE as f32 * VOXEL_SIZE/3.0,
         ORIGIN_Z+WORLD_SIZE as f32 * VOXEL_SIZE/2.0
     );
-    let mut fp_camera = FirstPerson::new(eye, at);
     
     window.set_light(Light::StickToCamera);
 
@@ -71,7 +63,7 @@ fn main() {
     let mut generation_start_time;
     let mut simulation_start_time;
     let mut total_render_time = 0;
-    while window.render_with_camera(&mut fp_camera) {
+    while window.render_with_camera(camera.get_fp()) {
         render_time = render_start_time.elapsed().as_micros();
         total_render_time += render_time;
         scene_generator.draw_border(&mut window);
@@ -82,25 +74,35 @@ fn main() {
         generation_time = generation_start_time.elapsed().as_micros();
 
         for mut e in window.events().iter() {
-            e.inhibited = true;
             match e.value {
                 WindowEvent::Key(key, action, _modif) => {
+                    e.inhibited = true;
                     cursor.input_key(key, action);
                     match key {
                         kiss3d::event::Key::Space => if matches!(action, kiss3d::event::Action::Press) { paused = !paused},
-                        _ => {move_camera(key, &mut eye_x, eye_y, &mut eye_z, at, &mut fp_camera)},
+                        Key::W => camera.move_z(render_time as f32 * CAMERA_MOVEMENT_SPEED),
+                        Key::S => camera.move_z(-(render_time as f32) * CAMERA_MOVEMENT_SPEED),
+                        Key::A => camera.move_x(render_time as f32 * CAMERA_MOVEMENT_SPEED),
+                        Key::D => camera.move_x(-(render_time as f32) * CAMERA_MOVEMENT_SPEED),
+                        _ => {},
                     }
                 },
                 WindowEvent::MouseButton(button, _action, _modif) => {
+                    e.inhibited = true;
                     cursor.input_click(&mut world, &mut scene_map, button);
                 },
                 WindowEvent::CursorPos(x, y, _modif) => {
+                    e.inhibited = true;
                     cursor.input_move(1.0-x/window.width() as f64, 1.0-y/window.height() as f64);
                 },
                 WindowEvent::Scroll(_a, b, _modif) => {
+                    e.inhibited = true;
                     cursor.input_scroll(b);
                 },
-                _ => {e.inhibited = false;}
+                WindowEvent::FramebufferSize(x, y) => {
+                    cursor.on_resize(x, y);
+                },
+                _ => {}
             }
         }
         
@@ -127,4 +129,6 @@ fn main() {
         generation_time = 0;
         render_start_time = Instant::now();
     }
+
+    cursor.delete_nodes(&mut window);
 }
