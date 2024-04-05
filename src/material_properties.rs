@@ -22,7 +22,9 @@ impl MaterialProperties {
             VoxelMaterial::Lava => MaterialProperties { material_type: MaterialType::LIQUID, weight: 9, activity: 0.2 },
             VoxelMaterial::Stone => MaterialProperties { material_type:MaterialType::POWDER, weight: 10, activity: 0.05 },
             VoxelMaterial::Wood => MaterialProperties { material_type: MaterialType::SOLID, weight: 100, activity: 0.0 },
-            VoxelMaterial::Fire => MaterialProperties { material_type: MaterialType::GAS, weight: 1, activity: 0.3 }
+            VoxelMaterial::Fire => MaterialProperties { material_type: MaterialType::GAS, weight: 1, activity: 0.3 },
+            VoxelMaterial::Oil => MaterialProperties { material_type: MaterialType::LIQUID, weight: 4, activity: 1.0 },
+            VoxelMaterial::Ice => MaterialProperties { material_type: MaterialType::SOLID, weight: 100, activity: 0.0 },
         }
     }
 }

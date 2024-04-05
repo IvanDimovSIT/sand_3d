@@ -43,6 +43,12 @@ impl TextureGenerator {
         let fire_texture = texture_manager.add(Path::new("textures/fire.png"), "fire");
         textures.insert(VoxelMaterial::Fire.get_id(), fire_texture);
 
+        let oil_texture = texture_manager.add(Path::new("textures/oil.png"), "oil");
+        textures.insert(VoxelMaterial::Oil.get_id(), oil_texture);
+
+        let ice_texture = texture_manager.add(Path::new("textures/ice.png"), "ice");
+        textures.insert(VoxelMaterial::Ice.get_id(), ice_texture);
+
 
         Self { texture_manager, textures}
     }

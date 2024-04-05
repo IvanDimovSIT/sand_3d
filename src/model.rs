@@ -12,7 +12,9 @@ pub enum VoxelMaterial {
     Lava,
     Stone,
     Wood,
-    Fire
+    Fire,
+    Oil,
+    Ice
 }
 impl VoxelMaterial {
     pub fn get_id(&self) -> u32 {
@@ -27,7 +29,9 @@ impl VoxelMaterial {
             Self::Stone => 7,
             Self::Lava => 8,
             Self::Wood => 9,
-            Self::Fire => 10
+            Self::Fire => 10,
+            Self::Oil => 11,
+            Self::Ice => 12,
         }
     }
 }
@@ -44,8 +48,10 @@ impl Display for VoxelMaterial {
             Self::Lava => "Lava",
             Self::Stone => "Stone",
             Self::Wood => "Wood",
-            Self::Fire => "Fire"}
-        )
+            Self::Fire => "Fire",
+            Self::Oil => "Oil",
+            Self::Ice => "Ice",
+        })
     }
 }
 

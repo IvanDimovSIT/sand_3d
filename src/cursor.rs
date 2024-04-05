@@ -31,7 +31,9 @@ impl Cursor{
             VoxelMaterial::Stone,
             VoxelMaterial::Metal,
             VoxelMaterial::Wood,
-            VoxelMaterial::Fire,  
+            VoxelMaterial::Fire,
+            VoxelMaterial::Oil,
+            VoxelMaterial::Ice,  
         ]);
         let font = Font::default();
         
