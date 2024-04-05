@@ -15,4 +15,6 @@ RMB - remove material
 
 W,S,A,D,Q,E - move camera
 
+SPACE - pause/unpause simulation
+
 ESC - exit
