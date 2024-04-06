@@ -134,7 +134,6 @@ impl SceneGenerator {
             back.append_translation(&self.back_translation);
             nodes.push(back);
         }
-
     }
 
     fn set_texutures(&self, nodes: &mut Vec<SceneNode>, material: &VoxelMaterial) {
@@ -151,7 +150,7 @@ impl SceneGenerator {
         let material = world.get(x, y, z);
         match neighbours.get_neighbours_count() {
             6 => {return nodes;},
-            0 => {
+            0..=2 => {
                 let voxel = window.add_cube(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
                 nodes.push(voxel);
             },

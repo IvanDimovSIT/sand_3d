@@ -10,7 +10,7 @@ pub struct MaterialProperties{
     pub activity: f32
 }
 impl MaterialProperties {
-    pub fn new(material: &VoxelMaterial) -> Self{
+    pub fn new(material: &VoxelMaterial) -> Self {
         match material {
             VoxelMaterial::Air => {panic!("Air has no properties")},
             VoxelMaterial::Sand => MaterialProperties { material_type: MaterialType::POWDER, weight: 10, activity: 1.0 },

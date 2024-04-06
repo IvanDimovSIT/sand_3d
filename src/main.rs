@@ -30,7 +30,18 @@ const ORIGIN_Y: f32 = -VOXEL_SIZE * WORLD_SIZE as f32 * 1.5;
 const ORIGIN_Z: f32 = 85.0;
 const TIME_BETWEEN_STEPS_US: u128 = 50_000;
 
-const CAMERA_MOVEMENT_SPEED: f32 = 0.00005;
+const CAMERA_MOVEMENT_SPEED: f32 = 5e-5;
+
+fn print_time(render_time: u128, generation_time: u128, simulation_time: u128) {
+    let total_time = render_time + generation_time + simulation_time;
+    println!(
+        "Render time: {}ms {}us; Mesh generation time: {}ms {}us; Simulation time: {}ms {}us; Total: {}ms {}us",
+        render_time/1000, render_time%1000,
+        generation_time/1000, generation_time%1000,
+        simulation_time/1000, simulation_time%1000,
+        total_time/1000, total_time%1000
+    );
+}
 
 fn main() {
     let mut window = Window::new("Sand 3D");
@@ -54,7 +65,7 @@ fn main() {
     let scene_generator = SceneGenerator::new(ORIGIN_X, ORIGIN_Y, ORIGIN_Z);
     let mut paused = false;
     let mut scene_map = SceneMap::new();
-    let mut cursor = Cursor::new(WORLD_SIZE/2, WORLD_SIZE-1, WORLD_SIZE/2);
+    let mut cursor = Cursor::new(WORLD_SIZE-1, WORLD_SIZE/2, WORLD_SIZE-1);
     let mut render_time;
     let mut generation_time = 0;
     let mut simulation_time = 0;
@@ -65,12 +76,6 @@ fn main() {
     while window.render_with_camera(camera.get_fp()) {
         render_time = render_start_time.elapsed().as_micros();
         total_render_time += render_time;
-        scene_generator.draw_border(&mut window);
-
-        generation_start_time = Instant::now();
-        let changed = scene_map.get_and_remove_changed(&mut window);
-        scene_generator.generate_scene(&mut window, &world, &mut scene_map, changed);    
-        generation_time = generation_start_time.elapsed().as_micros();
 
         if matches!(window.get_key(Key::W), Action::Press) {
             camera.move_z(render_time as f32 * CAMERA_MOVEMENT_SPEED)
@@ -143,12 +148,14 @@ fn main() {
             total_render_time -= TIME_BETWEEN_STEPS_US;
         }
 
-        println!(
-            "Render time: {}ms {}us; Mesh generation time: {}ms {}us; Simulation time: {}ms {}us",
-            render_time/1000, render_time%1000,
-            generation_time/1000, generation_time%1000,
-            simulation_time/1000, simulation_time%1000
-        );
+        scene_generator.draw_border(&mut window);
+
+        generation_start_time = Instant::now();
+        let changed = scene_map.get_and_remove_changed(&mut window);
+        scene_generator.generate_scene(&mut window, &world, &mut scene_map, changed);    
+        generation_time = generation_start_time.elapsed().as_micros();
+
+        print_time(render_time, generation_time, simulation_time);
         
         cursor.draw(&mut window, ORIGIN_X, ORIGIN_Y, ORIGIN_Z);
         cursor.draw_selected(&mut window);
